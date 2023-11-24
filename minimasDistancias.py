@@ -117,3 +117,82 @@ accuracy_2classes = accuracy_score(y2test, predicted_classes_2classes)
 print("Matriz de Confusión:")
 print(conf_matrix_2classes)
 print("\nAccuracy:", accuracy_2classes)
+
+# Filtrar para incluir solo las clases 0 y 1
+selected_classes = [0, 1]
+selected_indices = [i for i in range(len(y)) if y[i] in selected_classes]
+
+X_two_classes = X[selected_indices]
+y_two_classes = y[selected_indices]
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_two_classes)
+
+# Calcular la matriz de covarianza
+cov_matrix = np.cov(X_scaled, rowvar=False)
+
+# Calcular los valores propios y vectores propios
+eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
+
+# Ordenar los valores propios y vectores propios en orden descendente
+sorted_indices = np.argsort(eigenvalues)[::-1]
+eigenvalues = eigenvalues[sorted_indices]
+eigenvectors = eigenvectors[:, sorted_indices]
+
+# Seleccionar el número de componentes principales
+num_components = 2
+
+top_eigenvectors = eigenvectors[:, :num_components]
+
+# Proyectar los datos originales en el nuevo espacio de características
+X_pca = X_scaled.dot(top_eigenvectors)
+
+
+# Crear un DataFrame para los componentes principales
+pca_df = pd.DataFrame(data=X_pca, columns=['Componente Principal 1', 'Componente Principal 2'])
+
+
+
+pca_df['Target'] = y_two_classes
+
+# Visualizar los resultados
+plt.figure(figsize=(10, 6))
+targets = np.unique(y_two_classes)
+colors = ['r', 'g', 'b']
+for target, color in zip(targets, colors):
+    indices_to_keep = pca_df['Target'] == target
+    plt.scatter(pca_df.loc[indices_to_keep, 'Componente Principal 1'],
+                pca_df.loc[indices_to_keep, 'Componente Principal 2'],
+                c=color, label=target)
+plt.xlabel('Componente Principal 1')
+plt.ylabel('Componente Principal 2')
+plt.legend(targets)
+plt.title('PCA en el conjunto de datos Iris')
+plt.show()
+
+# Las dos características más relevantes según PCA, con dos clases
+#sacar centroides
+centroide1= sacarCentroides(X_pca[y_two_classes == 0])
+centroide2= sacarCentroides(X_pca[y_two_classes == 1])
+
+#sacar recta divisira
+x_vals = np.linspace(min(X_pca[:, 0]), max(X_pca[:, 0]), 10)
+# x_vals = np.linspace(-5,5,100)
+y_vals = ecuacion_lineal(x_vals)
+
+# Visualizar los resultados para dos clases
+plt.figure(figsize=(8, 6))
+plt.plot(x_vals, y_vals, label='Recta', color='red')
+targets_2classes = np.unique(y_two_classes)
+colors_2classes = ['r', 'g']
+for target, color in zip(targets_2classes, colors_2classes):
+    indices_to_keep = y_two_classes == target
+    plt.scatter(X_pca[indices_to_keep, 0], X_pca[indices_to_keep, 1], c=color, label=f'Clase {target}')
+plt.scatter(centroide1[0], centroide1[1], marker='s', color='blue', label='Centroide 0')
+plt.scatter(centroide2[0], centroide2[1], marker='s', color='purple', label='Centroide 1')
+plt.xlabel('PCA Componente 1')
+plt.ylabel('PCA Componente 2')
+plt.grid("on")
+plt.title('PCA en el conjunto de datos Iris (Dos clases)')
+plt.legend()
+plt.show()
