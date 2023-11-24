@@ -196,3 +196,123 @@ plt.grid("on")
 plt.title('PCA en el conjunto de datos Iris (Dos clases)')
 plt.legend()
 plt.show()
+
+#predict
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X2test)
+
+# Calcular la matriz de covarianza
+cov_matrix = np.cov(X_scaled, rowvar=False)
+
+# Calcular los valores propios y vectores propios
+eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
+
+# Ordenar los valores propios y vectores propios en orden descendente
+sorted_indices = np.argsort(eigenvalues)[::-1]
+eigenvalues = eigenvalues[sorted_indices]
+eigenvectors = eigenvectors[:, sorted_indices]
+
+# Seleccionar el número de componentes principales
+num_components = 2
+
+top_eigenvectors = eigenvectors[:, :num_components]
+
+# Proyectar los datos originales en el nuevo espacio de características
+X_pca = X_scaled.dot(top_eigenvectors)
+
+#evaluacion de predicciones (test)
+predictVals = predict(X_pca[:,0],X_pca[:,1])
+
+for i in range(len(predictVals)):
+  if predictVals[i] > 0:
+    print(f" el valor {X_pca[i]} pertenece a la clase 1")
+  else:
+    print(f" el valor {X_pca[i]} pertenece a la clase 2")
+
+predictVals = predict(X_pca[:, 0], X_pca[:, 1])
+# Transformar las predicciones a clases (0 o 1)
+predicted_classes = np.where(predictVals > 0, 1, 0)
+conf_matrix = confusion_matrix(y2test, predicted_classes)
+accuracy = accuracy_score(y2test, predicted_classes)
+print("Matriz de Confusión:")
+print(conf_matrix)
+print("\nAccuracy:", accuracy)
+
+def ecuacion_lineal(x):
+    restad1= ((centroide1[0]**2) + (centroide1[1]**2))/2
+    restad2= ((centroide2[0]**2) + (centroide2[1]**2))/2
+    restad3= ((centroide3[0]**2) + (centroide3[1]**2))/2
+    dc1 = (centroide1[0]-centroide2[0])
+    dc2 = (centroide1[1]-centroide2[1])
+    dc3 = (centroide3[1]-centroide3[1])
+    r1 = (restad1-restad2)
+    r2 = (restad1-restad3)
+    return -(dc1/dc2)*x - (r1/dc2), -(dc1/dc3)*x - (r2/dc3)
+
+#Las dos características más relevantes según t-SNE, con tres clases.
+X3clases = X_train[y_train != 3]
+y3clases = y_train[y_train != 3]
+
+
+scaler = StandardScaler()
+X_scaled_3classes = scaler.fit_transform(X3clases)
+
+tsne_3classes = TSNE(n_components=2, random_state=42)
+X_tsne_3classes = tsne_3classes.fit_transform(X_scaled_3classes)
+
+#fit con 3 centroides
+centroide1= np.array(sacarCentroides(X_tsne_3classes[y3clases == 0]))
+centroide2= np.array(sacarCentroides(X_tsne_3classes[y3clases == 1]))
+centroide3= np.array(sacarCentroides(X_tsne_3classes[y3clases == 2]))
+
+x_vals = np.linspace(min(X_tsne_3classes[:, 0]), max(X_tsne_3classes[:, 0]), 100)
+y_vals = ecuacion_lineal(x_vals)
+
+# Visualizar los resultados para dos clases
+plt.figure(figsize=(8, 6))
+plt.plot(x_vals, y_vals[0], label='Recta', color='red')
+plt.plot(x_vals, y_vals[1], label='Recta', color='red')
+targets_3classes = np.unique(y3clases)
+colors_3classes = ['r', 'g','b']
+for target, color in zip(targets_3classes, colors_3classes):
+    indices_to_keep = y3clases == target
+    plt.scatter(X_tsne_3classes[indices_to_keep, 0], X_tsne_3classes[indices_to_keep, 1], c=color, label=f'Clase {target}')
+plt.scatter(centroide1[0], centroide1[1], marker='s', color='blue', label='Centroide 0')
+plt.scatter(centroide2[0], centroide2[1], marker='s', color='purple', label='Centroide 1')
+plt.scatter(centroide3[0], centroide3[1], marker='s', color='orange', label='Centroide 2')
+plt.xlabel('t-SNE Componente 1')
+plt.ylabel('t-SNE Componente 2')
+plt.grid("on")
+plt.title('t-SNE en el conjunto de datos Iris (Tres clases)')
+plt.legend()
+plt.show()
+
+def euclidiana(p1, p2):
+    return np.sqrt(np.sum((p1 - p2) ** 2))
+
+X3clasesTest = X_test[y_test != 3]
+y3clasesTest = y_test[y_test != 3]
+
+
+scaler = StandardScaler()
+X_scaled_3classes = scaler.fit_transform(X3clasesTest)
+
+tsne_3classes = TSNE(n_components=2, random_state=42, perplexity=1)
+X_tsne_3classes = tsne_3classes.fit_transform(X_scaled_3classes)
+centroides = np.array([[centroide1],[centroide2],[centroide3]])
+
+
+predicted_classes_3classes = []
+for punto in X_tsne_3classes:
+    distancias = [euclidiana(punto, centroide) for centroide in centroides]
+    clase_predicha = np.argmin(distancias)
+    predicted_classes_3classes.append(clase_predicha)
+    print(f"El punto {punto} pertenece a la clase {clase_predicha}")
+
+#Matriz de confusión y accuracy
+predicted_classes_3classes = np.array(predicted_classes_3classes)
+conf_matrix_3classes = confusion_matrix(y3clasesTest, predicted_classes_3classes)
+accuracy_3classes = accuracy_score(y3clasesTest, predicted_classes_3classes)
+print("Matriz de Confusión:")
+print(conf_matrix_3classes)
+print("\nAccuracy:", accuracy_3classes)
