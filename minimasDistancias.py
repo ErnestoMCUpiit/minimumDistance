@@ -316,3 +316,111 @@ accuracy_3classes = accuracy_score(y3clasesTest, predicted_classes_3classes)
 print("Matriz de Confusión:")
 print(conf_matrix_3classes)
 print("\nAccuracy:", accuracy_3classes)
+
+# ╔═════════════════════════╗
+#    liz
+# ╚═════════════════════════╝
+#Las dos características más relevantes según PCA, con tres clases
+selected_classes = [0, 1,2]
+selected_indices = [i for i in range(len(y)) if y[i] in selected_classes]
+
+X_3 = X[selected_indices]
+y_3 = y[selected_indices]
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_3)
+
+# Calcular la matriz de covarianza
+cov_matrix = np.cov(X_scaled, rowvar=False)
+
+# Calcular los valores propios y vectores propios
+eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
+
+# Ordenar los valores propios y vectores propios en orden descendente
+sorted_indices = np.argsort(eigenvalues)[::-1]
+eigenvalues = eigenvalues[sorted_indices]
+eigenvectors = eigenvectors[:, sorted_indices]
+
+# Seleccionar el número de componentes principales
+num_components = 2
+
+top_eigenvectors = eigenvectors[:, :num_components]
+
+# Proyectar los datos originales en el nuevo espacio de características
+X_pca = X_scaled.dot(top_eigenvectors)
+
+
+# Crear un DataFrame para los componentes principales
+pca_df = pd.DataFrame(data=X_pca, columns=['Componente Principal 1', 'Componente Principal 2'])
+
+
+pca_df['Target'] = y_3
+
+# Visualizar los resultados
+plt.figure(figsize=(10, 6))
+targets = np.unique(y_3)
+colors = ['r', 'g', 'b']
+for target, color in zip(targets, colors):
+    indices_to_keep = pca_df['Target'] == target
+    plt.scatter(pca_df.loc[indices_to_keep, 'Componente Principal 1'],
+                pca_df.loc[indices_to_keep, 'Componente Principal 2'],
+                c=color, label=target)
+plt.xlabel('Componente Principal 1')
+plt.ylabel('Componente Principal 2')
+plt.legend(targets)
+plt.title('PCA en el conjunto de datos Iris')
+plt.show()
+
+# ╔═════════════════════════╗
+#    liz
+# ╚═════════════════════════╝
+selected_classes = [0, 1,2]
+selected_indices = [i for i in range(len(y_test)) if y[i] in selected_classes]
+
+X_3 = X_test[selected_indices]
+y_3 = y_test[selected_indices]
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_3)
+
+# Calcular la matriz de covarianza
+cov_matrix = np.cov(X_scaled, rowvar=False)
+
+# Calcular los valores propios y vectores propios
+eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
+
+# Ordenar los valores propios y vectores propios en orden descendente
+sorted_indices = np.argsort(eigenvalues)[::-1]
+eigenvalues = eigenvalues[sorted_indices]
+eigenvectors = eigenvectors[:, sorted_indices]
+
+# Seleccionar el número de componentes principales
+num_components = 2
+
+top_eigenvectors = eigenvectors[:, :num_components]
+
+# Proyectar los datos originales en el nuevo espacio de características
+X_pca = X_scaled.dot(top_eigenvectors)
+
+
+# Crear un DataFrame para los componentes principales
+pca_df = pd.DataFrame(data=X_pca, columns=['Componente Principal 1', 'Componente Principal 2'])
+
+
+pca_df['Target'] = y_3
+
+predicted_classes = []
+for punto in X_pca:
+    distancias = [euclidiana(punto, centroide) for centroide in centroides]
+    clase_predicha = np.argmin(distancias)
+    predicted_classes.append(clase_predicha)
+    print(f"El punto {punto} pertenece a la clase {clase_predicha}")
+
+
+predicted_classes = np.array(predicted_classes)
+conf_matrix = confusion_matrix(y_3, predicted_classes)
+accuracy = accuracy_score(y_3, predicted_classes)
+print("Matriz de Confusión:")
+print(conf_matrix)
+print("\nAccuracy:", accuracy)
+
